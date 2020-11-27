@@ -612,6 +612,11 @@ void ResponseAppendFeatures(void)
 #if defined(USE_I2C) && defined(USE_EZOPH)
     feature6 |= 0x10000000;  // xsns_78_ezoph.ino
 #endif
+#ifdef USE_TEEKAR
+    feature6 |= 0x20000000;  // xdrv_84_teekar.ino
+#endif
+
+
 #if defined(ESP32) && defined(USE_TTGO_WATCH)
     feature6 |= 0x20000000;  // xdrv_83_esp32watch.ino
 #endif

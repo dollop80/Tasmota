@@ -1248,7 +1248,7 @@ enum SupportedModules {
   SONOFF_S31, ZENGGE_ZF_WF017, SONOFF_POW_R2, SONOFF_IFAN02, BLITZWOLF_BWSHP, SHELLY1, SHELLY2, PHILIPS, NEO_COOLCAM, ESP_SWITCH,
   OBI, TECKIN, APLIC_WDP303075, TUYA_DIMMER, GOSUND, ARMTRONIX_DIMMERS, SK03_TUYA, PS_16_DZ, TECKIN_US, MANZOKU_EU_4,
   OBI2, YTF_IR_BRIDGE, DIGOO, KA10, ZX2820, MI_DESK_LAMP, SP10, WAGA, SYF05, SONOFF_L1,
-  SONOFF_IFAN03, EXS_DIMMER, PWM_DIMMER, SONOFF_D1, SONOFF_ZB_BRIDGE,
+  SONOFF_IFAN03, EXS_DIMMER, PWM_DIMMER, SONOFF_D1, SONOFF_ZB_BRIDGE, TEEKAR, 
   MAXMODULE };
 
 #define USER_MODULE        255
@@ -1261,7 +1261,7 @@ const char kModuleNames[] PROGMEM =
   "Sonoff S31|Zengge WF017|Sonoff Pow R2|Sonoff iFan02|BlitzWolf SHP|Shelly 1|Shelly 2|Xiaomi Philips|Neo Coolcam|ESP Switch|"
   "OBI Socket|Teckin|AplicWDP303075|Tuya MCU|Gosund SP1 v23|ARMTR Dimmer|SK03 Outdoor|PS-16-DZ|Teckin US|Manzoku strip|"
   "OBI Socket 2|YTF IR Bridge|Digoo DG-SP202|KA10|Luminea ZX2820|Mi Desk Lamp|SP10|WAGA CHCZ02MB|SYF05|Sonoff L1|"
-  "Sonoff iFan03|EXS Dimmer|PWM Dimmer|Sonoff D1|Sonoff ZbBridge"
+  "Sonoff iFan03|EXS Dimmer|PWM Dimmer|Sonoff D1|Sonoff ZbBridge|Teekar"
   ;
 
 const uint8_t kModuleNiceList[] PROGMEM = {
@@ -1282,6 +1282,9 @@ const uint8_t kModuleNiceList[] PROGMEM = {
   SONOFF_T13,
 #ifdef USE_SONOFF_D1
   SONOFF_D1,           // Sonoff D1
+#endif
+#ifdef USE_TEEKAR
+  TEEKAR,           // Sonoff D1
 #endif
   SONOFF_LED,          // Sonoff Light Devices
   SONOFF_BN,
@@ -1374,7 +1377,7 @@ enum SupportedTemplates8285 {
   TMP_SONOFF_POW_R2, TMP_BLITZWOLF_BWSHP, TMP_SHELLY1, TMP_SHELLY2, TMP_PHILIPS, TMP_NEO_COOLCAM, TMP_ESP_SWITCH, TMP_OBI,
   TMP_TECKIN, TMP_APLIC_WDP303075, TMP_TUYA_DIMMER, TMP_GOSUND, TMP_ARMTRONIX_DIMMERS, TMP_SK03_TUYA, TMP_PS_16_DZ,
   TMP_TECKIN_US, TMP_MANZOKU_EU_4, TMP_OBI2, TMP_YTF_IR_BRIDGE, TMP_DIGOO, TMP_KA10, TMP_ZX2820, TMP_MI_DESK_LAMP, TMP_SP10,
-  TMP_WAGA, TMP_SYF05, TMP_EXS_DIMMER, TMP_PWM_DIMMER, TMP_SONOFF_ZB_BRIDGE,
+  TMP_WAGA, TMP_SYF05, TMP_EXS_DIMMER, TMP_PWM_DIMMER, TMP_SONOFF_ZB_BRIDGE, TMP_TEEKAR,
   TMP_MAXMODULE_8285 };
 
 enum SupportedTemplates8266 {
@@ -1457,6 +1460,7 @@ const uint8_t kModuleTemplateList[MAXMODULE] PROGMEM = {
   TMP_PWM_DIMMER,
   TMP_SONOFF_DUAL,      // SONOFF_D1
   TMP_SONOFF_ZB_BRIDGE,
+  TMP_TEEKAR,      // TEEKAR
   };
 
 /*********************************************************************************************\
@@ -2524,7 +2528,30 @@ const mytmplt8266 kModules8266[TMP_MAXMODULE_8285] PROGMEM = {
     0,                  // GPIO15 connected to IO15 pad, also used for logging
     GPI8_KEY1,          // GPIO16 Button
     0
-  }
+  },
+  {                     // TEEKAR - Support for Martin Jerry/acenx/Tessan/NTONPOWER SD0x PWM
+                      // dimmer switches. The brightness of the load for these dimmers is
+                      // controlled by a PWM GPIO pin. There are typically power, up & down
+                      // buttons and 4 LED's. 
+    GPI8_USER,
+    GPI8_TXD,           // GPIO01 MCU serial control
+    GPI8_USER,
+    GPI8_RXD,           // GPIO03 MCU serial control
+    GPI8_I2C_SDA,       // GPIO4 I2C SDA - connected to LED MCU
+    GPI8_I2C_SCL,       // GPIO5 I2C SCL - connected to LED MCU
+                        // GPIO06 (SD_CLK   Flash)
+                        // GPIO07 (SD_DATA0 Flash QIO/DIO/DOUT)
+                        // GPIO08 (SD_DATA1 Flash QIO/DIO/DOUT)
+                        // GPIO09 (SD_DATA2 Flash QIO or ESP8285)
+                        // GPIO10 (SD_DATA3 Flash QIO or ESP8285)
+                        // GPIO11 (SD_CMD   Flash)
+    GPI8_KEY1,          // GPIO12 Switch 1
+    GPI8_SSPI_SCLK,     // GPIO13 CLK on HCL164
+    GPI8_SSPI_MOSI,     // GPIO14 A and B on HCL164
+    GPI8_USER,          
+    GPI8_USER,
+    0
+}
 };
 
 /*********************************************************************************************\

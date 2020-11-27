@@ -1,5 +1,7 @@
 ![Tasmota logo](/tools/logo/TASMOTA_FullLogo_Vector.svg)
 
+This fork was used to add Teekar Dimmer support. See https://templates.blakadder.com/teekar-UIW001-1.html, https://github.com/arendst/Tasmota/issues/5541, https://github.com/arendst/Tasmota/issues/469
+
 Alternative firmware for [ESP8266](https://en.wikipedia.org/wiki/ESP8266) based devices with **easy configuration using webUI, OTA updates, automation using timers or rules, expandability and entirely local control over MQTT, HTTP, Serial or KNX**.
 _Written for PlatformIO with limited support for Arduino IDE._
 
