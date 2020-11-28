@@ -2,6 +2,15 @@
   xdrv_85_teekar.ino - TEEKAR dimmer support for Tasmota
 
   Author: Constantine Safronov
+  The driver supports its own FADE feature as tasmota's 
+  fade works only with PWM dimmers. To enable it:
+  1. Go to Tasmota Console and enter commands:
+  2. fade 0
+  3. speed X
+  Thats it.
+  The Speed command has the same meaning as stated in Tasmota docs
+  https://tasmota.github.io/docs/Commands/
+  Pay attention, that it is needed to disable fade!
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -39,10 +48,15 @@
 
 #define DIM_MIN 66   //dim min
 #define DIM_MAX 178  //dim max
+#define TEEKAR_DIM_LOOP 0.05 //Seconds
 
 struct TEEKAR {
   uint8_t power = 255;      // Not initialized
   uint8_t dimmer = 255;     // Not initialized
+  uint8_t led = 0;          // Not initialized
+  float dim_curr = 0;       // Not initialized
+  float dim_targ = 0;       // Not initialized
+  float dim_incr = 0;       // Not initialized
 } Teekar;
 
 /********************************************************************************************/
@@ -88,20 +102,39 @@ uint16_t TeekarReadTouch()
   uint8_t tmp1, tmp2;
 
   Wire.beginTransmission(HLS028_ADDR);
-  Wire.write(0x34); // reg high byte
+  Wire.write(0x34); // reg address
   Wire.endTransmission(false);
 
   Wire.requestFrom(HLS028_ADDR, 1);
   tmp1 = Wire.read();
 
   Wire.beginTransmission(HLS028_ADDR);
-  Wire.write(0x35); // reg high byte
+  Wire.write(0x35); // reg address
   Wire.endTransmission(false);
 
   Wire.requestFrom(HLS028_ADDR, 1);
   tmp2 = Wire.read();
   value = (tmp1<<8) + tmp2;
   return value;
+}
+
+bool TeekarCalcDimmer()
+{
+  Teekar.dim_incr = 100.0 / ((Settings.light_speed * 0.5) / TEEKAR_DIM_LOOP + 1);
+  //Going UP
+  if(Teekar.dim_targ > Teekar.dim_curr && ((Teekar.dim_targ - Teekar.dim_curr) > Teekar.dim_incr))
+  {
+      Teekar.dim_curr += Teekar.dim_incr;
+      return true;
+  }
+  //Going Down
+  else if (Teekar.dim_targ < Teekar.dim_curr  && ((Teekar.dim_curr - Teekar.dim_targ) > Teekar.dim_incr))
+  {
+      Teekar.dim_curr -= Teekar.dim_incr;
+      return true;
+  }
+  //Stop
+  return false;
 }
 
 void TeekarSend()
@@ -127,7 +160,7 @@ bool TeekarSendPower()
 
     if(Teekar.power)
     {
-      TeekarSendDimmer();
+      Teekar.dim_targ = LightGetDimmer(1);
     }
     else
     {
@@ -135,8 +168,7 @@ bool TeekarSendPower()
       {
         TeekarWriteLed(0);
       } 
-      Teekar.dimmer = 0;
-      TeekarSend();
+      Teekar.dim_targ = 0;
     }
   }
   return true;
@@ -144,21 +176,22 @@ bool TeekarSendPower()
 
 bool TeekarSendDimmer(void)
 {
-  uint8_t dimmer = LightGetDimmer(1);
+  uint8_t dimmer = (uint8_t)Teekar.dim_curr;
+
   dimmer = (dimmer < Settings.dimmer_hw_min) ? Settings.dimmer_hw_min : dimmer;
   dimmer = (dimmer > Settings.dimmer_hw_max) ? Settings.dimmer_hw_max : dimmer;
 
   uint8_t dimc = (dimmer * (DIM_MAX - DIM_MIN))/100 + DIM_MIN;
   if (dimc != Teekar.dimmer) 
   {
-    dimc <= 66 ? Teekar.dimmer = 0 : Teekar.dimmer = dimc;
+    dimc <= 68 ? Teekar.dimmer = 0 : Teekar.dimmer = dimc;
     TeekarSend();
   }
 
   if (PinUsed(GPIO_SSPI_MOSI) && PinUsed(GPIO_SSPI_SCLK))
   {
     uint8_t led = dimmer/14+1;
-    if (dimc <= 66) led = 0;
+    if (dimc <= 68) led = 0;
     TeekarWriteLed(led);
   }
   return true;
@@ -214,9 +247,10 @@ bool Xdrv85(uint8_t function)
         }
         if(led && Teekar.power)
         {
-          if (PinUsed(GPIO_SSPI_MOSI) && PinUsed(GPIO_SSPI_SCLK))
+          if (Teekar.led != led && PinUsed(GPIO_SSPI_MOSI) && PinUsed(GPIO_SSPI_SCLK))
           {
-            TeekarWriteLed(led);
+            Teekar.led = led;
+            //TeekarWriteLed(led);
             char scmnd[20];
             uint8_t val;
             if(led==8)
@@ -228,12 +262,17 @@ bool Xdrv85(uint8_t function)
             ExecuteCommand(scmnd, SRC_SWITCH);
           }
         }
+
+        if(TeekarCalcDimmer())
+        {
+          TeekarSendDimmer();
+        }
         break;
       case FUNC_SET_DEVICE_POWER:
         result = TeekarSendPower();
         break;
       case FUNC_SET_CHANNELS:
-        result = TeekarSendDimmer();
+        Teekar.dim_targ = LightGetDimmer(1);
         break;
       case FUNC_MODULE_INIT:
         TeekarInit(); 
